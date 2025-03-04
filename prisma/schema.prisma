@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id          String     @id @default(uuid())
+  username    String     @unique
+  nomeBase    String
+  senha       String
+  email       String?
+  dataCriacao DateTime   @default(now())
+  desculpas   Desculpa[]
+  votos       Voto[]
+}
+
+model Desculpa {
+  id          String   @id @default(uuid())
+  texto       String
+  categoria   String
+  contexto    String
+  dataCriacao DateTime @default(now())
+  autorId     String
+  autor       Usuario  @relation(fields: [autorId], references: [id])
+  votos       Voto[]
+}
+
+model Voto {
+  id          String   @id @default(uuid())
+  desculpaId  String
+  usuarioId   String
+  dataCriacao DateTime @default(now())
+  desculpa    Desculpa @relation(fields: [desculpaId], references: [id])
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@unique([desculpaId, usuarioId])
+}
