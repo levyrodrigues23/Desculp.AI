@@ -24,18 +24,24 @@ model Desculpa {
   categoria   String
   contexto    String
   dataCriacao DateTime @default(now())
+  contadorVotos Int    @default(0) // Contador de votos para melhorar a performance
   autorId     String
   autor       Usuario  @relation(fields: [autorId], references: [id])
   votos       Voto[]
+
+  @@index([autorId]) //melhora a performance de consultas por autor
 }
 
 model Voto {
   id          String   @id @default(uuid())
   desculpaId  String
   usuarioId   String
-  dataCriacao DateTime @default(now())
-  desculpa    Desculpa @relation(fields: [desculpaId], references: [id])
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  desculpa    Desculpa @relation(fields: [desculpaId], references: [id], onDelete: Cascade)
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  dataCriacao DateTime @default(now()) // Registra quando o voto foi criado
 
-  @@unique([desculpaId, usuarioId])
+  @@unique([desculpaId, usuarioId]) // Garante que um usuário só vote uma vez por desculpa
+  @@index([usuarioId]) // Melhora performance de consultas por usuário
+  @@index([desculpaId]) // Melhora performance de consultas por desculpa
+
 }

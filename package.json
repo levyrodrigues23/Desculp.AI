@@ -12,6 +12,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@google/generative-ai": "^0.23.0",
+    "dotenv":"^16.4.7",
     "@prisma/client": "^6.4.1",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2"

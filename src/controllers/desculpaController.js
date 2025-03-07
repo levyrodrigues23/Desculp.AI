@@ -1,10 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import 'dotenv/config';
 const prisma = new PrismaClient();
 
-export const criarDesculpa = async (req, res) => {
+export const salvarDesculpa = async (req, res) => {
   const { categoria, contexto, texto } = req.body;
-  const { userId } = req; 
+  const { userId } = req;
 
   try {
     const desculpa = await prisma.desculpa.create({
@@ -66,18 +67,34 @@ export const votarDesculpa = async (req, res) => {
 }
 
 export const gerarDesculpa = async (req, res) => {
-
-  const { categoria, contexto } = req.body;
-  const texto = `Pedido de desculpa gerado pela IA para a categoria ${categoria} e contexto ${contexto}.`;
-
   try {
-    const desculpa = await prisma.desculpa.create({
-      data: { texto, categoria, contexto, autorId: 'some-author-id' }, // Substitua 'some-author-id' pelo ID do autor real
-    });
-    res.json({ success: true, data: { texto: desculpa.texto } });
+    const { categoria, contexto } = req.body;
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const prompt = `crie apenas 1 pedido de desculpas como mensagem criativa no formato de mensagem para categoria ${categoria} e contexto ${contexto}. e não use caracteres de formtação e símbolos especiais de markdown/texto. `;
+    const resultado = await model.generateContent(prompt);
+    const limparFormatacao = (texto) => {
+      return texto
+        .replace(/\n/g, ' ')           // Remove quebras de linha
+        .replace(/\r/g, ' ')           // Remove retornos de carro
+        .replace(/\t/g, ' ')           // Remove tabulações
+        .replace(/\*\*/g, '')          // Remove asteriscos duplos
+        .replace(/\*/g, '')            // Remove asteriscos simples
+        .replace(/#{1,6}\s?/g, '')     // Remove símbolos de título markdown
+        .replace(/`/g, '')             // Remove backticks
+        .replace(/\//g, '')            // Remove barras
+        .replace(/\\/g, '')            // Remove contra-barras
+        .replace(/\s+/g, ' ')          // Remove múltiplos espaços
+        .trim();                       // Remove espaços no início e fim
+    };
+    const resultadoTexto = limparFormatacao(resultado.response.text());
+    res.json({ success: true, data: { texto: resultadoTexto } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+
+
+
 };
 
 export const getDesculpas = async (req, res) => {
