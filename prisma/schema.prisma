@@ -12,7 +12,7 @@ model Usuario {
   username    String     @unique
   nomeBase    String
   senha       String
-  email       String     @unique  // Torne o campo 'email' obrigatório e único
+  email       String     @unique  
   dataCriacao DateTime   @default(now())
   desculpas   Desculpa[]
   votos       Voto[]

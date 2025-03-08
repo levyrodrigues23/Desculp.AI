@@ -6,17 +6,23 @@ const prisma = new PrismaClient();
 
 export const salvarDesculpa = async (req, res) => {
   const { categoria, contexto, texto } = req.body;
-  const { userId } = req;
+  const { userId } = req; // Certifique-se de que o userId está sendo extraído da requisição corretamente.
   
   try {
     const desculpa = await prisma.desculpa.create({
-      data: { texto, categoria, contexto, autorId: userId },
+      data: { 
+        texto, 
+        categoria, 
+        contexto, 
+        autorId: userId, 
+      },
     });
-    
+  
     res.json({ success: true, data: { id: desculpa.id, texto: desculpa.texto } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+  
 };
 
 export const atualizarDesculpa = async (req, res) => {
@@ -86,9 +92,15 @@ export const getDesculpas = async (req, res) => {
   
   try {
     const desculpas = await prisma.desculpa.findMany({
-      skip, take: parseInt(limit), orderBy: { [ordenar]: 'desc' },
+      skip, 
+      take: parseInt(limit),
+      orderBy: {
+        votos: {
+          _count: 'desc'
+        }
+      },
     });
-    
+
     const total = await prisma.desculpa.count();
     const paginas = Math.ceil(total / limit);
     res.json({ success: true, data: { items: desculpas, total, paginas } });
@@ -96,6 +108,7 @@ export const getDesculpas = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 export const getDesculpaById = async (req, res) => {
   const { id } = req.params;
