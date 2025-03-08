@@ -4,14 +4,20 @@ import desculpaRoutes from './src/routes/desculpaRoutes.js';
 import { PrismaClient } from '@prisma/client';
 
 const app = express();
-const port = 3001;
-
+const port = process.env.PORT || 3001; // Use a porta definida em variáveis de ambiente ou a padrão 3001
 const prisma = new PrismaClient();
 
+// Middleware de parsing de JSON
 app.use(express.json());
+
+// Serve arquivos estáticos da pasta front-end
+app.use(express.static('frontclone/desculpai-web/dist'));
+
+// Definição das rotas
 app.use('/usuarios', userRoutes);
 app.use('/desculpas', desculpaRoutes);
 
+// Rota inicial para testar a conexão com o banco de dados
 app.get('/', async (req, res) => {
   try {
     await prisma.$connect();
@@ -22,15 +28,18 @@ app.get('/', async (req, res) => {
   }
 });
 
+// Middleware para tratar rotas não encontradas
 app.use((req, res) => {
   res.status(404).send('Route not found.');
 });
 
+// Middleware de erro global
 app.use((error, req, res, next) => {
   console.error('Error:', error);
   res.status(500).send('Internal Server Error.');
 });
 
+// Inicialização do servidor
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });

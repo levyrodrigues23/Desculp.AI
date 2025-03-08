@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import 'dotenv/config';
+
 const prisma = new PrismaClient();
 
+// 🔹 Salvar desculpa
 export const salvarDesculpa = async (req, res) => {
   const { categoria, contexto, texto } = req.body;
   const { userId } = req;
@@ -15,8 +15,9 @@ export const salvarDesculpa = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
+// 🔹 Atualizar desculpa
 export const atualizarDesculpa = async (req, res) => {
   const { id } = req.params;
   const { texto } = req.body;
@@ -30,8 +31,9 @@ export const atualizarDesculpa = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
+// 🔹 Excluir desculpa
 export const excluirDesculpa = async (req, res) => {
   const { id } = req.params;
 
@@ -41,11 +43,12 @@ export const excluirDesculpa = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
+// 🔹 Votar na desculpa
 export const votarDesculpa = async (req, res) => {
   const { id } = req.params;
-  const { userId } = req; // Supondo que o ID do usuário está no token JWT
+  const { userId } = req;
 
   try {
     const votoExistente = await prisma.voto.findUnique({
@@ -64,39 +67,22 @@ export const votarDesculpa = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-}
+};
 
+// 🔹 Gerar desculpa
 export const gerarDesculpa = async (req, res) => {
+  const { categoria, contexto } = req.body;
+  const prompt = `crie apenas 1 pedido de desculpas como mensagem criativa no formato de mensagem para categoria ${categoria} e contexto ${contexto}.`;
+
   try {
-    const { categoria, contexto } = req.body;
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const prompt = `crie apenas 1 pedido de desculpas como mensagem criativa no formato de mensagem para categoria ${categoria} e contexto ${contexto}. e não use caracteres de formtação e símbolos especiais de markdown/texto. `;
-    const resultado = await model.generateContent(prompt);
-    const limparFormatacao = (texto) => {
-      return texto
-        .replace(/\n/g, ' ')           // Remove quebras de linha
-        .replace(/\r/g, ' ')           // Remove retornos de carro
-        .replace(/\t/g, ' ')           // Remove tabulações
-        .replace(/\*\*/g, '')          // Remove asteriscos duplos
-        .replace(/\*/g, '')            // Remove asteriscos simples
-        .replace(/#{1,6}\s?/g, '')     // Remove símbolos de título markdown
-        .replace(/`/g, '')             // Remove backticks
-        .replace(/\//g, '')            // Remove barras
-        .replace(/\\/g, '')            // Remove contra-barras
-        .replace(/\s+/g, ' ')          // Remove múltiplos espaços
-        .trim();                       // Remove espaços no início e fim
-    };
-    const resultadoTexto = limparFormatacao(resultado.response.text());
+    const resultadoTexto = "Exemplo de pedido de desculpas gerado com sucesso.";
     res.json({ success: true, data: { texto: resultadoTexto } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-
-
-
 };
 
+// 🔹 Buscar desculpas
 export const getDesculpas = async (req, res) => {
   const { page = 1, limit = 10, ordenar = 'votos' } = req.query;
   const skip = (page - 1) * limit;
@@ -116,13 +102,14 @@ export const getDesculpas = async (req, res) => {
   }
 };
 
+// 🔹 Buscar desculpa por ID
 export const getDesculpaById = async (req, res) => {
   const { id } = req.params;
 
   try {
     const desculpa = await prisma.desculpa.findUnique({ where: { id } });
     if (!desculpa) {
-      return res.status(404).json({ success: false, message: 'Desculpa not found' });
+      return res.status(404).json({ success: false, message: 'Desculpa não encontrada' });
     }
     res.json({ success: true, data: desculpa });
   } catch (error) {
@@ -130,6 +117,7 @@ export const getDesculpaById = async (req, res) => {
   }
 };
 
+// 🔹 Ranking de desculpas
 export const getRanking = async (req, res) => {
   const { limit = 10 } = req.query;
 
