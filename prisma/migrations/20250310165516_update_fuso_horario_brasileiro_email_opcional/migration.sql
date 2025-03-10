@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "Desculpa" ALTER COLUMN "dataCriacao" SET DEFAULT TIMEZONE('America/Sao_Paulo', CURRENT_TIMESTAMP);
+
+-- AlterTable
+ALTER TABLE "Usuario" ALTER COLUMN "email" DROP NOT NULL,
+ALTER COLUMN "dataCriacao" SET DEFAULT TIMEZONE('America/Sao_Paulo', CURRENT_TIMESTAMP);
+
+-- AlterTable
+ALTER TABLE "Voto" ALTER COLUMN "dataCriacao" SET DEFAULT TIMEZONE('America/Sao_Paulo', CURRENT_TIMESTAMP);

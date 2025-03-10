@@ -5,24 +5,27 @@ import jwt from 'jsonwebtoken';
 const prisma = new PrismaClient();
 const secret = process.env.JWT_SECRET || 'chave__secreta';
 
-// 🔹 Registro de usuário
+
 export const registerUser = async (req, res) => {
   const { nomeBase, senha, email } = req.body;
   const username = `${nomeBase}#${Math.random().toString(36).substring(2, 6)}`;
 
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'E-mail é obrigatório' });
-  }
-
   try {
-    const existingUser = await prisma.usuario.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'E-mail já cadastrado' });
+    if (email) {
+      const existingUser = await prisma.usuario.findUnique({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'E-mail já cadastrado' });
+      }
     }
 
     const senhaCriptografada = await bcrypt.hash(senha, 10);
     const user = await prisma.usuario.create({
-      data: { username, nomeBase, senha: senhaCriptografada, email },
+      data: {
+        username,
+        nomeBase,
+        senha: senhaCriptografada,
+        ...(email && { email })
+      },
     });
 
     res.json({ success: true, data: { username: user.username } });

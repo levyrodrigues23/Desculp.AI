@@ -12,19 +12,18 @@ model Usuario {
   username    String     @unique
   nomeBase    String
   senha       String
-  email       String     @unique  // Torne o campo 'email' obrigatório e único
-  dataCriacao DateTime   @default(now())
+  email       String?    @unique  // Tornando o email opcional mas único
+  dataCriacao DateTime   @default(dbgenerated("TIMEZONE('America/Sao_Paulo', CURRENT_TIMESTAMP)"))
   desculpas   Desculpa[]
   votos       Voto[]
 }
-
 
 model Desculpa {
   id          String   @id @default(uuid())
   texto       String
   categoria   String
   contexto    String
-  dataCriacao DateTime @default(now())
+  dataCriacao DateTime @default(dbgenerated("TIMEZONE('America/Sao_Paulo', CURRENT_TIMESTAMP)"))
   autorId     String
   autor       Usuario  @relation(fields: [autorId], references: [id])
   votos       Voto[]
@@ -34,7 +33,7 @@ model Voto {
   id          String   @id @default(uuid())
   desculpaId  String
   usuarioId   String
-  dataCriacao DateTime @default(now())
+  dataCriacao DateTime @default(dbgenerated("TIMEZONE('America/Sao_Paulo', CURRENT_TIMESTAMP)"))
   desculpa    Desculpa @relation(fields: [desculpaId], references: [id])
   usuario     Usuario  @relation(fields: [usuarioId], references: [id])
 

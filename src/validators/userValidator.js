@@ -6,7 +6,8 @@ export const validateRegisterUser = [
     .isLength({ min: 3 }).withMessage('O nomeBase deve ter pelo menos 3 caracteres'),
 
   body('email')
-    .isEmail().withMessage('O e-mail deve ser válido'),
+    .optional() 
+    .isEmail().withMessage('Se fornecido, o e-mail deve ser válido'),
 
   body('senha')
     .isLength({ min: 6 }).withMessage('A senha deve ter pelo menos 6 caracteres')
