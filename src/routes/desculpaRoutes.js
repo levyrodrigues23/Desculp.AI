@@ -1,4 +1,5 @@
 import express from 'express';
+import authenticateToken from '../middlewares/authMiddlewares.js';
 import {
   gerarDesculpa,
   salvarDesculpa,
@@ -14,7 +15,7 @@ const router = express.Router();
 
 // Rotas para pedidos de desculpa
 router.post('/gerar', gerarDesculpa); // Gerar pedido de desculpa
-router.post('/', salvarDesculpa); // Criar um novo pedido de desculpa
+router.post('/', authenticateToken, salvarDesculpa); // Criar um novo pedido de desculpa
 router.put('/:id', atualizarDesculpa); // Atualizar um pedido de desculpa
 router.delete('/:id', excluirDesculpa); // Excluir um pedido de desculpa
 router.post('/:id/votar', votarDesculpa); // Votar em um pedido de desculpa

@@ -8,12 +8,36 @@ export const salvarDesculpa = async (req, res) => {
   const { categoria, contexto, texto } = req.body;
   const { userId } = req;
   
+  if (!categoria || !contexto || !texto) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Categoria, contexto e texto são obrigatórios'
+    });
+  }
+
   try {
     const desculpa = await prisma.desculpa.create({
-      data: { texto, categoria, contexto, autorId: userId },
+      data: { 
+        texto, 
+        categoria, 
+        contexto, 
+        autorId: userId 
+      },
     });
-    
-    res.json({ success: true, data: { id: desculpa.id, texto: desculpa.texto } });
+
+    res.json({ 
+      success: true, 
+      data: {
+        id: desculpa.id,
+        texto: desculpa.texto,
+        categoria: desculpa.categoria,
+        contexto: desculpa.contexto,
+        dataCriacao: desculpa.dataCriacao.toISOString(),
+        autorId: desculpa.autorId,
+        contadorVotos: 0,
+        votadaPeloUsuario: false
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -49,7 +73,7 @@ export const votarDesculpa = async (req, res) => {
   
   try {
     const votoExistente = await prisma.voto.findUnique({
-      where: { usuarioId_desculpaId: { usuarioId: userId, desculpaId: id } },
+      where: { desculpaId_usuarioId: { usuarioId: userId, desculpaId: id } },
     });
     
     if (votoExistente) {

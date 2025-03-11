@@ -28,7 +28,13 @@ export const registerUser = async (req, res) => {
       },
     });
 
-    res.json({ success: true, data: { username: user.username } });
+    const token = jwt.sign(
+      { userId: user.id, username: user.username, nomeBase: user.nomeBase, dataCriacao: user.dataCriacao },
+      secret,
+      { expiresIn: '1d' }
+    );
+
+    res.json({ success: true, data: { username: user.username, token: token } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
