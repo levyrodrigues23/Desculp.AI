@@ -12,3 +12,17 @@ export const validateRegisterUser = [
   body('senha')
     .isLength({ min: 6 }).withMessage('A senha deve ter pelo menos 6 caracteres')
 ];
+
+export const validateAlterarSenha = [
+  body('senhaAtual')
+    .notEmpty().withMessage('A senha atual é obrigatória'),
+    
+  body('novaSenha')
+    .isLength({ min: 6 }).withMessage('A nova senha deve ter pelo menos 6 caracteres')
+    .custom((value, { req }) => {
+      if (value === req.body.senhaAtual) {
+        throw new Error('A nova senha deve ser diferente da senha atual');
+      }
+      return true;
+    })
+];

@@ -2,12 +2,16 @@ import express from 'express';
 import userRoutes from './src/routes/userRoutes.js';
 import desculpaRoutes from './src/routes/desculpaRoutes.js';
 import { PrismaClient } from '@prisma/client';
+import cors from 'cors'
 
 const app = express();
 const prisma = new PrismaClient();
 
 // Middleware de parsing de JSON
 app.use(express.json());
+
+// Configuração primária do CORS
+app.use(cors());
 
 // Serve arquivos estáticos da pasta front-end
 app.use(express.static('frontclone/desculpai-web/dist'));

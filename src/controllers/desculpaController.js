@@ -48,9 +48,16 @@ export const atualizarDesculpa = async (req, res) => {
   const { texto } = req.body;
   
   try {
+    const acharDesculpa = await prisma.desculpa.findUnique({ where: { id } });
+    if (!acharDesculpa) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Desculpa não encontrada' 
+      });
+    }
     const desculpa = await prisma.desculpa.update({ where: { id }, data: { texto } });
     
-    res.json({ success: true, data: { id: desculpa.id, texto: desculpa.texto } });
+    res.json({ success: true, data: { id: desculpa.id, texto: desculpa.texto , categoria: desculpa.categoria, contexto: desculpa.contexto} });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -60,6 +67,13 @@ export const excluirDesculpa = async (req, res) => {
   const { id } = req.params;
   
   try {
+    const acharDesculpa = await prisma.desculpa.findUnique({ where: { id } });
+    if (!acharDesculpa) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Desculpa não encontrada' 
+      });
+    }
     await prisma.desculpa.delete({ where: { id } });
     res.json({ success: true, message: 'Pedido de desculpa excluído com sucesso' });
   } catch (error) {

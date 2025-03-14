@@ -98,8 +98,16 @@ export const minhasDesculpas = async (req, res) => {
   const { userId } = req;
 
   try {
-    const desculpas = await prisma.desculpa.findMany({ where: { autorId: userId } });
-    res.json({ success: true, data: { items: desculpas, total: desculpas.length } });
+    const desculpas = await prisma.desculpa.findMany({ where: { autorId: userId }, orderBy: { dataCriacao: 'desc' } });
+
+    // Preparando terreno para futura implementação de "Votos"
+    const desculpasFormatadas = desculpas.map((d) => ({
+      ...d,
+      contadorVotos: 0,
+      votadaPeloUsuario: false
+    }))
+
+    res.json({ success: true, data: desculpasFormatadas });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
