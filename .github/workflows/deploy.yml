@@ -24,17 +24,19 @@ jobs:
 
       - name: Configurar Chave SSH
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > deploy_key.pem
-          chmod 600 deploy_key.pem
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
+          chmod 600 ~/.ssh/deploy_key.pem
 
-      - name: Aceitar a Chave SSH da EC2 Automaticamente
+      - name: Criar Diretório SSH e Aceitar a Chave da EC2
         run: |
+          mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Enviar Script de Deploy para EC2
         run: |
-          scp -i deploy_key.pem deploy.sh ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy.sh
+          scp -i ~/.ssh/deploy_key.pem deploy.sh ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy.sh
 
       - name: Executar o Deploy na EC2
         run: |
-          ssh -i deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} "bash ~/deploy.sh"
+          ssh -i ~/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} "bash ~/deploy.sh"
