@@ -4,7 +4,7 @@ import desculpaRoutes from './src/routes/desculpaRoutes.js';
 import { PrismaClient } from '@prisma/client';
 
 const app = express();
-const port = process.env.PORT || 3001; // Use a porta definida em variáveis de ambiente ou a padrão 3001
+ // Use a porta definida em variáveis de ambiente ou a padrão 3001
 const prisma = new PrismaClient();
 
 // Middleware de parsing de JSON
@@ -39,7 +39,8 @@ app.use((error, req, res, next) => {
   res.status(500).send('Internal Server Error.');
 });
 
+const PORT = process.env.PORT || 3001;
 // Inicialização do servidor
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server is running on ${port}`);
 });
