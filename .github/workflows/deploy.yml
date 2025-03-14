@@ -3,7 +3,7 @@ name: Deploy para EC2
 on:
   push:
     branches:
-      - main  # Só executa quando houver push na main
+      - main  # Executa apenas quando houver push na main
 
 jobs:
   deploy:
@@ -13,30 +13,26 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v3
 
-      - name: Criar o Script de Deploy no Runner
-        run: |
-          echo '#!/bin/bash' > deploy.sh
-          echo 'cd /home/ubuntu/Desculp.AI' >> deploy.sh
-          echo 'git pull origin main' >> deploy.sh
-          echo 'npm install' >> deploy.sh
-          echo 'pm2 restart desculpai' >> deploy.sh
-          chmod +x deploy.sh
-
       - name: Configurar Chave SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key.pem
           chmod 600 ~/.ssh/deploy_key.pem
 
-      - name: Criar Diretório SSH e Aceitar a Chave da EC2
+      - name: Aceitar a Chave SSH da EC2 Automaticamente
         run: |
-          mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Enviar Script de Deploy para EC2
-        run: |
-          scp -i ~/.ssh/deploy_key.pem deploy.sh ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy.sh
+      - name: Deploy usando Rsync
+        uses: burnett01/rsync-deployments@5.1
+        with:
+          switches: -avzr --delete
+          path: ./*
+          remote_path: /home/ubuntu/Desculp.AI/
+          remote_host: ${{ secrets.EC2_HOST }}
+          remote_user: ubuntu
+          remote_key: "${{ secrets.EC2_SSH_KEY }}"
 
       - name: Executar o Deploy na EC2
         run: |
-          ssh -i ~/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} "bash ~/deploy.sh"
+          ssh -i ~/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} "cd /home/ubuntu/Desculp.AI && npm install && pm2 restart desculpai"
