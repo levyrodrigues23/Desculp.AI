@@ -3,7 +3,7 @@ name: Deploy para EC2
 on:
   push:
     branches:
-      - main  # Executa apenas quando houver push na main
+      - main  # Só executa quando houver push na main
 
 jobs:
   deploy:
@@ -13,28 +13,15 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v3
 
-      - name: Configurar SSH para EC2
+      - name: Configurar Chave SSH
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.EC2_SSH_KEY }}" > deploy_key.pem
+          chmod 600 deploy_key.pem
 
-      - name: Conectar na EC2 e atualizar o código
+      - name: Enviar Script de Deploy para EC2
         run: |
-          ssh -i ~/.ssh/id_ed25519 ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/Desculp.AI
-            
-            # Configurar SSH para acessar o GitHub dentro da EC2
-            mkdir -p ~/.ssh
-            echo "${{ secrets.G_SSH_KEY }}" > ~/.ssh/id_ed25519_github
-            chmod 600 ~/.ssh/id_ed25519_github
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            
-            # Usar a chave SSH do GitHub para fazer git pull
-            GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519_github" git pull origin main
-            
-            # Instalar dependências e reiniciar o servidor
-            npm install
-            pm2 restart desculpai
-          EOF
+          scp -i deploy_key.pem ~/deploy.sh ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy.sh
+
+      - name: Executar o Deploy na EC2
+        run: |
+          ssh -i deploy_key.pem ubuntu@${{ secrets.EC2_HOST }} "bash ~/deploy.sh"
