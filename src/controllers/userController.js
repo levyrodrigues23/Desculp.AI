@@ -8,7 +8,9 @@ const secret = process.env.JWT_SECRET || 'chave__secreta';
 
 export const registerUser = async (req, res) => {
   const { nomeBase, senha, email } = req.body;
-  const username = `${nomeBase}#${Math.random().toString(36).substring(2, 6)}`;
+  // Gerar username único
+  const username = nomeBase.toLowerCase().replace(/\s/g, '_') + '#' + 
+  Date.now().toString(36).substring(2, 6);
 
   try {
     if (email) {

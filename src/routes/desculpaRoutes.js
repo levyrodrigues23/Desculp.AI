@@ -21,8 +21,8 @@ router.delete('/:id', authenticateToken, excluirDesculpa); // Excluir um pedido 
 router.post('/:id/votar', authenticateToken, votarDesculpa); // Votar em um pedido de desculpa
 
 // Rotas para obtenção de pedidos de desculpa
-router.get('/', getDesculpas);
+router.get('/ranking', getRanking); // ranking precisa ficar mais acima
 router.get('/:id', getDesculpaById);
-router.get('/ranking', getRanking);
+router.get('/', getDesculpas);
 
 export default router;

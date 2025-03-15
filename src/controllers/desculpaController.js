@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import jwt from 'jsonwebtoken'
 import 'dotenv/config';
 
 const prisma = new PrismaClient();
@@ -82,22 +83,71 @@ export const excluirDesculpa = async (req, res) => {
 };
 
 export const votarDesculpa = async (req, res) => {
-  const { id } = req.params;
-  const { userId } = req;
-  
   try {
-    const votoExistente = await prisma.voto.findUnique({
-      where: { desculpaId_usuarioId: { usuarioId: userId, desculpaId: id } },
+    const { id } = req.params;
+    const { userId } = req;
+
+    // Verificar se a desculpa existe
+    const desculpa = await prisma.desculpa.findUnique({
+      where: { id },
+      include: {
+        votos: true
+      }
     });
-    
-    if (votoExistente) {
-      return res.status(400).json({ success: false, message: 'Você já votou neste pedido de desculpa' });
+
+    if (!desculpa) {
+      return res.status(404).json({
+        success: false,
+        message: 'Desculpa não encontrada'
+      });
     }
-    
-    await prisma.voto.create({ data: { usuarioId: userId, desculpaId: id } });
-    res.json({ success: true, message: 'Voto registrado com sucesso' });
+
+    // Verificar se o usuário já votou
+    const votoExistente = await prisma.voto.findFirst({
+      where: {
+        desculpaId: id,
+        usuarioId: userId
+      }
+    });
+
+    let liked = false;
+
+    if (votoExistente) {
+      // Remover voto
+      await prisma.voto.delete({
+        where: { id: votoExistente.id }
+      });
+    } else {
+      // Adicionar voto
+      await prisma.voto.create({
+        data: {
+          desculpaId: id,
+          usuarioId: userId
+        }
+      });
+      liked = true;
+    }
+
+    // Obter a contagem atualizada de votos
+    const votosAtualizados = await prisma.voto.count({
+      where: {
+        desculpaId: id
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        liked,
+        contadorVotos: votosAtualizados
+      }
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao votar em desculpa',
+      error: { details: error.message }
+    });
   }
 };
 
@@ -150,12 +200,79 @@ export const getDesculpaById = async (req, res) => {
 };
 
 export const getRanking = async (req, res) => {
-  const { limit = 10 } = req.query;
-  
   try {
-    const desculpas = await prisma.desculpa.findMany({ take: parseInt(limit), orderBy: { votos: 'desc' } });
-    res.json({ success: true, data: { items: desculpas } });
+    const limit = Number(req.query.limit) || 10;
+
+    // Extrair id do token
+    let userId = null
+    if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        // Assumindo que você tenha importado jwt
+        const decoded = jwt.decode(token);
+        userId = decoded?.id || decoded?.userId;
+      } catch (error) {
+        console.error('Erro ao decodificar token:', error);
+      }
+    }
+
+    // Buscar desculpas ordenadas por contagem de votos
+    const desculpas = await prisma.desculpa.findMany({
+      take: limit,
+      include: {
+        autor: {
+          select: { 
+            id: true,
+            username: true 
+          }
+        },
+        _count: {
+          select: { votos: true }
+        },
+        votos: userId ? {
+          where: {
+            usuarioId: userId
+          },
+          select: {
+            id: true
+          },
+          take: 1 // Precisamos apenas verificar se existe algum
+        } : false
+      },
+      orderBy: {
+        votos: {
+          _count: 'desc'
+        }
+      }
+    });
+
+    // Formatar o resultado conforme esperado pelo frontend
+    const resultado = desculpas.map(d => ({
+      id: d.id,
+      texto: d.texto,
+      categoria: d.categoria,
+      contexto: d.contexto,
+      dataCriacao: d.dataCriacao.toISOString(),
+      autorId: d.autorId,
+      autor: {
+        id: d.autor.id,
+        username: d.autor.username
+      },
+      contadorVotos: d._count.votos,
+      votadaPeloUsuario: userId ? d.votos.length > 0 : false
+    }));
+
+    return res.json({
+      success: true,
+      data: resultado
+    });
+    
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Erro ao obter ranking:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erro ao obter ranking de desculpas',
+      error: { details: error.message }
+    });
   }
 };
