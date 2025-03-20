@@ -66,19 +66,55 @@ export const atualizarDesculpa = async (req, res) => {
 
 export const excluirDesculpa = async (req, res) => {
   const { id } = req.params;
+  const { userId } = req;
   
   try {
-    const acharDesculpa = await prisma.desculpa.findUnique({ where: { id } });
-    if (!acharDesculpa) {
+    const desculpa = await prisma.desculpa.findUnique({ 
+      where: { id },
+      include: { votos: true } // Incluindo votos para saber se existem
+    });
+    
+    if (!desculpa) {
       return res.status(404).json({ 
         success: false, 
         message: 'Desculpa não encontrada' 
       });
     }
-    await prisma.desculpa.delete({ where: { id } });
-    res.json({ success: true, message: 'Pedido de desculpa excluído com sucesso' });
+    
+    // Verificando se o usuário é o autor da desculpa
+    if (desculpa.autorId !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Você não tem permissão para excluir esta desculpa' 
+      });
+    }
+    
+    // $transaction - garante que tudo seja excluído ou nada seja
+    await prisma.$transaction(async (prismaClient) => {
+      // Excluindo primeiro todos os votos associados
+      if (desculpa.votos.length > 0) {
+        await prismaClient.voto.deleteMany({
+          where: { desculpaId: id }
+        });
+      }
+      
+      // Depois excluindo a desculpa
+      await prismaClient.desculpa.delete({
+        where: { id }
+      });
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Pedido de desculpa excluído com sucesso' 
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Erro ao excluir desculpa:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erro ao excluir a desculpa',
+      error: { details: error.message }
+    });
   }
 };
 
