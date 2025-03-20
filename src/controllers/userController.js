@@ -100,17 +100,43 @@ export const minhasDesculpas = async (req, res) => {
   const { userId } = req;
 
   try {
-    const desculpas = await prisma.desculpa.findMany({ where: { autorId: userId }, orderBy: { dataCriacao: 'desc' } });
+    // Buscar todas as desculpas do usuário
+    const desculpas = await prisma.desculpa.findMany({
+      where: { autorId: userId },
+      orderBy: { dataCriacao: 'desc' }
+    });
 
-    // Preparando terreno para futura implementação de "Votos"
-    const desculpasFormatadas = desculpas.map((d) => ({
+    // Se não houver desculpas, retornar array vazio
+    if (desculpas.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Buscar os votos do usuário para suas próprias desculpas
+    const votos = await prisma.voto.findMany({
+      where: {
+        usuarioId: userId,
+        desculpaId: { in: desculpas.map(d => d.id) }
+      }
+    });
+
+    // Criar um Map para facilitar a verificação de votos
+    const votosMap = new Map(votos.map(v => [v.desculpaId, true]));
+
+    // Adicionar informação de voto a cada desculpa
+    const desculpasFormatadas = desculpas.map(d => ({
       ...d,
-      contadorVotos: 0,
-      votadaPeloUsuario: false
-    }))
+      votadaPeloUsuario: votosMap.has(d.id) || false
+    }));
 
-    res.json({ success: true, data: desculpasFormatadas });
+    res.json({
+      success: true,
+      data: desculpasFormatadas
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar desculpas',
+      error: { details: error.message }
+    });
   }
 };
