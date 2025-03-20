@@ -103,30 +103,39 @@ export const minhasDesculpas = async (req, res) => {
     // Buscar todas as desculpas do usuário
     const desculpas = await prisma.desculpa.findMany({
       where: { autorId: userId },
-      orderBy: { dataCriacao: 'desc' }
+      orderBy: { dataCriacao: 'desc' },
+      include: {
+        votos: true // Incluindo os votos relacionados para contagem
+      }
     });
 
-    // Se não houver desculpas, retornar array vazio
+    // Array vazio para quando não há desculpas
     if (desculpas.length === 0) {
       return res.json({ success: true, data: [] });
     }
 
-    // Buscar os votos do usuário para suas próprias desculpas
-    const votos = await prisma.voto.findMany({
+    // Buscando os votos do usuário para suas próprias desculpas
+    const votosDoUsuario = await prisma.voto.findMany({
       where: {
         usuarioId: userId,
         desculpaId: { in: desculpas.map(d => d.id) }
       }
     });
 
-    // Criar um Map para facilitar a verificação de votos
-    const votosMap = new Map(votos.map(v => [v.desculpaId, true]));
+    // Map para facilitar a verificação de votos
+    const votosMap = new Map(votosDoUsuario.map(v => [v.desculpaId, true]));
 
-    // Adicionar informação de voto a cada desculpa
-    const desculpasFormatadas = desculpas.map(d => ({
-      ...d,
-      votadaPeloUsuario: votosMap.has(d.id) || false
-    }));
+    // Adicionando informação de voto e contagem a cada desculpa
+    const desculpasFormatadas = desculpas.map(d => {
+      // Um objeto sem o campo votos para não incluí-lo na resposta
+      const { votos, ...desculpaSemVotos } = d;
+      
+      return {
+        ...desculpaSemVotos,
+        contadorVotos: votos.length, // Calculando dinamicamente a contagem de votos
+        votadaPeloUsuario: votosMap.has(d.id) || false
+      };
+    });
 
     res.json({
       success: true,
