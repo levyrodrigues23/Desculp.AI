@@ -214,10 +214,11 @@ export const getDesculpas = async (req, res) => {
     if (req.headers.authorization) {
       try {
         const token = req.headers.authorization.split(' ')[1];
-        const decoded = jwt.decode(token);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'chave__secreta');
         userId = decoded?.id || decoded?.userId;
       } catch (error) {
-        console.error('Erro ao decodificar token:', error);
+        // Token inválido ou expirado - continua sem userId
+        console.error('Erro ao verificar token:', error.message);
       }
     }
 
@@ -307,15 +308,15 @@ export const getRanking = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
 
     // Extrair id do token
-    let userId = null
+    let userId = null;
     if (req.headers.authorization) {
       try {
         const token = req.headers.authorization.split(' ')[1];
-        // Assumindo que você tenha importado jwt
-        const decoded = jwt.decode(token);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'chave__secreta');
         userId = decoded?.id || decoded?.userId;
       } catch (error) {
-        console.error('Erro ao decodificar token:', error);
+        // Token inválido ou expirado - continua sem userId
+        console.error('Erro ao verificar token:', error.message);
       }
     }
 
