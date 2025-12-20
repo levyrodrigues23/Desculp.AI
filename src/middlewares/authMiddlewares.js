@@ -18,4 +18,3 @@ const authenticateToken = (req, res, next) => {
   };
   
   export default authenticateToken; // Exportação correta
-  

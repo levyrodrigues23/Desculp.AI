@@ -209,15 +209,82 @@ export const getDesculpas = async (req, res) => {
   const skip = (page - 1) * limit;
   
   try {
+    // Extrair id do token se disponível
+    let userId = null;
+    if (req.headers.authorization) {
+      try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded = jwt.decode(token);
+        userId = decoded?.id || decoded?.userId;
+      } catch (error) {
+        console.error('Erro ao decodificar token:', error);
+      }
+    }
+
+    // Configurar ordenação baseada no parâmetro
+    let orderByClause;
+    if (ordenar === 'votos') {
+      orderByClause = {
+        votos: {
+          _count: 'desc'
+        }
+      };
+    } else {
+      orderByClause = { [ordenar]: 'desc' };
+    }
+
     const desculpas = await prisma.desculpa.findMany({
-      skip, take: parseInt(limit), orderBy: { [ordenar]: 'desc' },
+      skip,
+      take: parseInt(limit),
+      orderBy: orderByClause,
+      include: {
+        autor: {
+          select: {
+            id: true,
+            username: true
+          }
+        },
+        _count: {
+          select: { votos: true }
+        },
+        votos: userId ? {
+          where: {
+            usuarioId: userId
+          },
+          select: {
+            id: true
+          },
+          take: 1
+        } : false
+      }
     });
+    
+    // Formatar o resultado
+    const items = desculpas.map(d => ({
+      id: d.id,
+      texto: d.texto,
+      categoria: d.categoria,
+      contexto: d.contexto,
+      dataCriacao: d.dataCriacao.toISOString(),
+      autorId: d.autorId,
+      autor: {
+        id: d.autor.id,
+        username: d.autor.username
+      },
+      contadorVotos: d._count.votos,
+      votadaPeloUsuario: userId ? d.votos.length > 0 : false
+    }));
     
     const total = await prisma.desculpa.count();
     const paginas = Math.ceil(total / limit);
-    res.json({ success: true, data: { items: desculpas, total, paginas } });
+    res.json({ success: true, data: { items, total, paginas } });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Erro ao buscar desculpas:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erro ao buscar desculpas',
+      error: { details: error.message }
+    });
   }
 };
 
